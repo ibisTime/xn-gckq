@@ -26,5 +26,13 @@ public class PropertiesUtil {
 
         public static String XN_GCHF_URL = props.getProperty("XN_GCHF_URL");
 
+        public static String SN = props.getProperty("SN");
+
+        public static String IP = props.getProperty("IP");
+
+        public static String PORT = props.getProperty("PORT");
+
+        public static String DoorIP = props.getProperty("DoorIP");
+
     }
 }

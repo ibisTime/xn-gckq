@@ -15,10 +15,26 @@ import com.alibaba.fastjson.JSONObject;
 import com.cdkj.gckq.http.BizConnecter;
 import com.xinai.core.WgMjController;
 
+import util.PropertiesUtil;
 import util.StringValidater;
 
 @Controller
 public class AttendanceController {
+
+    // POST 考勤信息URL
+    public static final String XN_GCHF_URL = PropertiesUtil.Config.XN_GCHF_URL;
+
+    // SN号
+    public static final String SN = PropertiesUtil.Config.SN;
+
+    // IP，配在同一局域网
+    public static final String IP = PropertiesUtil.Config.IP;
+
+    // 端口号
+    public static final String PORT = PropertiesUtil.Config.PORT;
+
+    // 闸机门编号
+    public static final String DoorIP = PropertiesUtil.Config.DoorIP;
 
     @RequestMapping(value = "/receive-attend", method = RequestMethod.GET)
     public void doClockIn(HttpServletRequest request,
@@ -31,17 +47,21 @@ public class AttendanceController {
         String result = null;
         // 可配
         if (StringValidater.toDouble(sim) > 70.0) {
+            // 上传考勤记录
             result = BizConnecter.getBizData(str);
-
-            // 打开闸机
-            WgMjController controller = new WgMjController();
-            controller.setControllerSN(200023568);
-            controller.setIP("192.168.1.224");
-            controller.setPORT(60000);
-            controller.RemoteOpenDoorIP(1);
+            JSONObject resultJson = JSONObject.parseObject(result);
+            // true 成功 false 失败
+            if ("true".equals(resultJson.getString("result"))) {
+                // 打开闸机
+                WgMjController controller = new WgMjController();
+                controller.setControllerSN(StringValidater.toInteger(SN));
+                controller.setIP(SN);
+                controller.setPORT(StringValidater.toInteger(PORT));
+                controller.RemoteOpenDoorIP(StringValidater.toInteger(DoorIP));
+            }
 
         }
-        // true 成功 false 失败
+
         PrintWriter writer;
         try {
             writer = response.getWriter();
