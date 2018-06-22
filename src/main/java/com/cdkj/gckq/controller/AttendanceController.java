@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -37,6 +38,7 @@ public class AttendanceController {
     public static final String DoorIP = PropertiesUtil.Config.DoorIP;
 
     @RequestMapping(value = "/receive-attend", method = RequestMethod.GET)
+    @Transactional
     public void doClockIn(HttpServletRequest request,
             HttpServletResponse response) throws Exception {
         System.out.println("lalla");
@@ -55,7 +57,7 @@ public class AttendanceController {
                 // 打开闸机
                 WgMjController controller = new WgMjController();
                 controller.setControllerSN(StringValidater.toInteger(SN));
-                controller.setIP(SN);
+                controller.setIP(IP);
                 controller.setPORT(StringValidater.toInteger(PORT));
                 controller.RemoteOpenDoorIP(StringValidater.toInteger(DoorIP));
             }
