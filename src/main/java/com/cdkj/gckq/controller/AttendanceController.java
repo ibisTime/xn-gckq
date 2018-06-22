@@ -8,7 +8,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -37,23 +36,23 @@ public class AttendanceController {
     // 闸机门编号
     public static final String DoorIP = PropertiesUtil.Config.DoorIP;
 
+    // 识别分值
+    public static final String Score = PropertiesUtil.Config.Score;
+
     @RequestMapping(value = "/receive-attend", method = RequestMethod.GET)
-    @Transactional
     public void doClockIn(HttpServletRequest request,
             HttpServletResponse response) throws Exception {
-        System.out.println("lalla");
+        // 获取人脸识别系统的入参
         String str = URLDecoder.decode(request.getQueryString(), "UTF-8");
         JSONObject json = JSONObject.parseObject(str);
-        String sim = json.getString("sim");
-        System.out.println(json.getString("sim"));
-        String result = null;
-        // 可配
-        if (StringValidater.toDouble(sim) > 70.0) {
+        String sim = json.getString("sim");// 识别分数值
+        String result = "false";
+
+        if (StringValidater.toDouble(sim) > StringValidater.toDouble(Score)) {
             // 上传考勤记录
             result = BizConnecter.getBizData(str);
             JSONObject resultJson = JSONObject.parseObject(result);
-            // true 成功 false 失败
-            if ("true".equals(resultJson.getString("result"))) {
+            if ("true".equals(resultJson.getString("result"))) {// 云端考勤落地成功
                 // 打开闸机
                 WgMjController controller = new WgMjController();
                 controller.setControllerSN(StringValidater.toInteger(SN));
@@ -61,7 +60,6 @@ public class AttendanceController {
                 controller.setPORT(StringValidater.toInteger(PORT));
                 controller.RemoteOpenDoorIP(StringValidater.toInteger(DoorIP));
             }
-
         }
 
         PrintWriter writer;

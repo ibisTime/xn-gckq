@@ -34,5 +34,7 @@ public class PropertiesUtil {
 
         public static String DoorIP = props.getProperty("DoorIP");
 
+        public static String Score = props.getProperty("Score");
+
     }
 }
