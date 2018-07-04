@@ -20,19 +20,6 @@ public class BizConnecter {
         } catch (Exception e) {
             throw new BizException("Biz000", "链接请求超时，请联系管理员");
         }
-        // 开始解析响应json
-        // String errorCode = RegexUtils.find(resJson, "errorCode\":\"(.+?)\"",
-        // 1);
-        // String errorInfo = RegexUtils.find(resJson, "errorInfo\":\"(.+?)\"",
-        // 1);
-        // logger.info(
-        // "request:code<" + "" + "> json<" + json + ">\nresponse:errorCode<"
-        // + errorCode + "> errorInfo<" + errorInfo + ">");
-        // if (YES.equalsIgnoreCase(errorCode)) {
-        // data = RegexUtils.find(resJson, "data\":(.*)\\}", 1);
-        // } else {
-        // throw new BizException(errorCode, errorInfo);
-        // }
     }
 
 }
