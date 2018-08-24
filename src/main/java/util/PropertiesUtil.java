@@ -36,5 +36,8 @@ public class PropertiesUtil {
 
         public static String Score = props.getProperty("Score");
 
+        public static String AttendProcesserPath = props
+            .getProperty("AttendProcesserPath");
+
     }
 }

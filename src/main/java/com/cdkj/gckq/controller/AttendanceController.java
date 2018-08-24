@@ -4,31 +4,32 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.URLDecoder;
+import java.util.Date;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
-import com.cdkj.gckq.exception.BizException;
 import com.cdkj.gckq.http.BizConnecter;
 import com.xinai.core.WgMjController;
 
+import util.DateUtil;
 import util.PropertiesUtil;
 import util.StringValidater;
 
 @Controller
+@Component("attendanceController")
 public class AttendanceController {
     private static final Log logger = LogFactory
         .getLog(AttendanceController.class);
@@ -48,31 +49,22 @@ public class AttendanceController {
     // 识别分值
     private static final String Score = PropertiesUtil.Config.Score;
 
-    // 离线考勤文件路劲
-    private static String path = null;
-    static {
-        try {
-            path = Thread.currentThread().getContextClassLoader()
-                .getResource("").toURI().getPath();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    // 人脸识别软件路径
+    private static final String AttendProcesserPath = PropertiesUtil.Config.AttendProcesserPath;
 
-    // 离线考勤文件名称
-    private static final String attendanceFile = "attendance.txt";
+    private WgMjController controller = new WgMjController();
 
     @RequestMapping(value = "/receive-attend", method = RequestMethod.GET)
     public void doClockIn(HttpServletRequest request,
             HttpServletResponse response) throws Exception {
         String result = "{\"result\":false}";
+
         try {
             String param = URLDecoder.decode(request.getQueryString(), "UTF-8");
+
             JSONObject json = JSONObject.parseObject(param);
             String sim = json.getString("sim");
-            String id = json.getString("id");
 
-            logger.info("=========员工" + id + "人脸相似度：" + sim + "============");
             if (StringValidater.toDouble(sim) > StringValidater
                 .toDouble(Score)) {
                 logger.info(" ==========人脸识别成功，打开闸机==============");
@@ -81,20 +73,8 @@ public class AttendanceController {
                 logger.info("  =========上传考勤记录==============");
                 result = BizConnecter.getBizData(param);
             }
-
-            // 将离线考勤记录上传到服务器
-            File file = new File(path + "/" + attendanceFile);
-            if (file.exists()) {
-                uploadOfflineAttendance();
-            }
         } catch (Exception e) {
-            if (e instanceof JSONException) {
-                logger.info("===========参数错误!==============");
-            }
-            if (e instanceof BizException) {
-                logger.info("===========链接请求超时，生成离线考勤记录==============");
-                createAttendanceFile(request);
-            }
+            e.printStackTrace();
         }
 
         PrintWriter writer;
@@ -108,48 +88,42 @@ public class AttendanceController {
     }
 
     // 将离线考勤记录上传到服务器
-    private void uploadOfflineAttendance()
+    @SuppressWarnings("unused")
+    private void uploadAttendanceRecord()
             throws FileNotFoundException, IOException {
         logger.info("===========开始上传离线考勤记录==============");
-        File file = new File(path + "/" + attendanceFile);
-        InputStreamReader reader = new InputStreamReader(
-            new FileInputStream(file));
-        BufferedReader bufferedReader = new BufferedReader(reader);
-        String param = null;
-        param = bufferedReader.readLine();
-        while (param != null) {
-            BizConnecter.getBizData(param);
-            param = bufferedReader.readLine();
+        File file = new File(AttendProcesserPath);
+        File[] files = file.listFiles();
+        if (files == null) {
+            return;
         }
-        bufferedReader.close();
-        file.delete();
+
+        String fileDate = DateUtil.dateToStr(new Date(),
+            DateUtil.FRONT_DATE_FORMAT_STRING);
+        for (File attendanceFile : files) {
+            if (attendanceFile.isFile()
+                    && attendanceFile.getName().contains(fileDate)) {
+                InputStreamReader reader = new InputStreamReader(
+                    new FileInputStream(attendanceFile), "UTF-8");
+                BufferedReader bufferedReader = new BufferedReader(reader);
+                String param = bufferedReader.readLine();
+                while (null != param) {
+                    BizConnecter.getBizData(param);
+                    param = bufferedReader.readLine();
+                }
+                bufferedReader.close();
+                attendanceFile.delete();
+            }
+        }
         logger.info("===========离线考勤记录上传完成==============");
     }
 
     // 开闸机
     private void openDoor() throws Exception {
-        WgMjController controller = new WgMjController();
+        // WgMjController controller = new WgMjController();
         controller.setControllerSN(StringValidater.toInteger(SN));
         controller.setIP(IP);
         controller.setPORT(StringValidater.toInteger(PORT));
         controller.RemoteOpenDoorIP(StringValidater.toInteger(DoorIP));
-    }
-
-    // 创建离线考勤文件
-    private void createAttendanceFile(HttpServletRequest request) {
-        try {
-            File attendance = new File(path, attendanceFile);
-            attendance.createNewFile();
-
-            byte attendanceBt[] = new byte[1024];
-            attendanceBt = (URLDecoder.decode(request.getQueryString(), "UTF-8")
-                    + "\r\n").getBytes();
-            FileOutputStream attendanceIn = new FileOutputStream(attendance,
-                true);
-            attendanceIn.write(attendanceBt, 0, attendanceBt.length);
-            attendanceIn.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }
